@@ -2,26 +2,6 @@
     NovaUI
     Compact UI Library
     Rayfield-style API, original implementation.
-
-    Main API:
-      NovaUI:CreateWindow(...)
-      Window:CreateTab(...)
-      Tab:CreateSection(...)
-      Tab:CreateDivider(...)
-      Tab:CreateButton(...)
-      Tab:CreateToggle(...)
-      Tab:CreateSlider(...)
-      Tab:CreateDropdown(...)
-      Tab:CreateInput(...)
-      Tab:CreateKeybind(...)
-      Tab:CreateColorPicker(...)
-      Tab:CreateLabel(...)
-      Tab:CreateParagraph(...)
-      NovaUI:Notify(...)
-      NovaUI:SetVisibility(...)
-      NovaUI:IsVisible()
-      NovaUI:Destroy()
-      Window:ModifyTheme(...)
 ]]
 
 local NovaUI = {}
@@ -93,7 +73,11 @@ end
 local function tween(instance, properties, duration)
     TweenService:Create(
         instance,
-        TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+        TweenInfo.new(
+            duration or 0.2,
+            Enum.EasingStyle.Quart,
+            Enum.EasingDirection.Out
+        ),
         properties
     ):Play()
 end
@@ -138,14 +122,20 @@ end
 
 local function addHover(frame)
     local original = frame.BackgroundColor3
+
     frame.MouseEnter:Connect(function()
         if frame.Parent then
-            tween(frame, {BackgroundColor3 = currentTheme.ElementHover}, 0.15)
+            tween(frame, {
+                BackgroundColor3 = currentTheme.ElementHover
+            }, 0.15)
         end
     end)
+
     frame.MouseLeave:Connect(function()
         if frame.Parent then
-            tween(frame, {BackgroundColor3 = original}, 0.15)
+            tween(frame, {
+                BackgroundColor3 = original
+            }, 0.15)
         end
     end)
 end
@@ -156,13 +146,18 @@ local function createBaseElement(tab, height)
     frame.BackgroundColor3 = currentTheme.Element
     frame.BorderSizePixel = 0
     frame.Parent = getElementParent(tab)
+
     corner(frame, 7)
     stroke(frame)
+
     return frame
 end
 
 function NovaUI:CreateWindow(settings)
-    assert(type(settings) == "table", "NovaUI:CreateWindow expects a table")
+    assert(
+        type(settings) == "table",
+        "NovaUI:CreateWindow expects a table"
+    )
 
     if activeWindow then
         activeWindow:Destroy()
@@ -178,14 +173,23 @@ function NovaUI:CreateWindow(settings)
 
     local main = Instance.new("Frame")
     main.Name = "Main"
+
     main.Size = UDim2.fromOffset(
         settings.Width or 520,
         settings.Height or 370
     )
-    main.Position = UDim2.new(0.5, -(settings.Width or 520) / 2, 0.5, -(settings.Height or 370) / 2)
+
+    main.Position = UDim2.new(
+        0.5,
+        -(settings.Width or 520) / 2,
+        0.5,
+        -(settings.Height or 370) / 2
+    )
+
     main.BackgroundColor3 = currentTheme.Background
     main.BorderSizePixel = 0
     main.Parent = gui
+
     corner(main, 10)
     stroke(main)
 
@@ -195,6 +199,7 @@ function NovaUI:CreateWindow(settings)
     topbar.BackgroundColor3 = currentTheme.Topbar
     topbar.BorderSizePixel = 0
     topbar.Parent = main
+
     corner(topbar, 10)
 
     local title = makeText(
@@ -204,6 +209,7 @@ function NovaUI:CreateWindow(settings)
         currentTheme.Text,
         true
     )
+
     title.Position = UDim2.fromOffset(14, 0)
     title.Size = UDim2.new(1, -125, 1, 0)
 
@@ -214,6 +220,7 @@ function NovaUI:CreateWindow(settings)
         currentTheme.SubText,
         false
     )
+
     subtitle.Position = UDim2.fromOffset(14, 27)
     subtitle.Size = UDim2.new(1, -125, 0, 14)
     subtitle.Visible = settings.Subtitle ~= nil
@@ -292,6 +299,7 @@ function NovaUI:CreateWindow(settings)
         topbar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1
                 or input.UserInputType == Enum.UserInputType.Touch then
+
                 dragging = true
                 dragStart = input.Position
                 startPos = main.Position
@@ -303,7 +311,9 @@ function NovaUI:CreateWindow(settings)
                 input.UserInputType == Enum.UserInputType.MouseMovement
                 or input.UserInputType == Enum.UserInputType.Touch
             ) then
+
                 local delta = input.Position - dragStart
+
                 main.Position = UDim2.new(
                     startPos.X.Scale,
                     startPos.X.Offset + delta.X,
@@ -316,6 +326,7 @@ function NovaUI:CreateWindow(settings)
         UserInputService.InputEnded:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1
                 or input.UserInputType == Enum.UserInputType.Touch then
+
                 dragging = false
             end
         end)
@@ -330,22 +341,48 @@ function NovaUI:CreateWindow(settings)
     end
 
     function window:Minimize()
-        if window._minimized then return end
+        if window._minimized then
+            return
+        end
+
         window._minimized = true
         body.Visible = false
-        tween(main, {Size = UDim2.fromOffset(main.AbsoluteSize.X, 44)}, 0.25)
+
+        tween(
+            main,
+            {
+                Size = UDim2.fromOffset(
+                    main.AbsoluteSize.X,
+                    44
+                )
+            },
+            0.25
+        )
+
         minimize.Text = "+"
     end
 
     function window:Maximize()
-        if not window._minimized then return end
+        if not window._minimized then
+            return
+        end
+
         window._minimized = false
-        tween(main, {Size = window._fullSize}, 0.25)
+
+        tween(
+            main,
+            {
+                Size = window._fullSize
+            },
+            0.25
+        )
+
         task.delay(0.18, function()
             if not window._destroyed then
                 body.Visible = true
             end
         end)
+
         minimize.Text = "−"
     end
 
@@ -358,11 +395,16 @@ function NovaUI:CreateWindow(settings)
     end
 
     function window:Destroy()
-        if window._destroyed then return end
+        if window._destroyed then
+            return
+        end
+
         window._destroyed = true
+
         if gui then
             gui:Destroy()
         end
+
         if activeWindow == window then
             activeWindow = nil
         end
@@ -420,6 +462,7 @@ function NovaUI:CreateWindow(settings)
         button.Size = UDim2.new(1, -4, 0, 32)
         button.AutoButtonColor = false
         button.Parent = tabs
+
         corner(button, 7)
         stroke(button)
 
@@ -480,6 +523,7 @@ function NovaUI:CreateWindow(settings)
 
         function tab:CreateDivider()
             local value = {}
+
             local divider = Instance.new("Frame")
             divider.Size = UDim2.new(1, -8, 0, 1)
             divider.BackgroundColor3 = currentTheme.Stroke
@@ -495,6 +539,7 @@ function NovaUI:CreateWindow(settings)
 
         function tab:CreateButton(config)
             config = config or {}
+
             local value = {}
             local frame = createBaseElement(tab, 40)
 
@@ -520,18 +565,27 @@ function NovaUI:CreateWindow(settings)
             end
 
             registerFlag(config, value)
+
             return value
         end
 
         function tab:CreateToggle(config)
             config = config or {}
+
             local value = {
                 CurrentValue = config.CurrentValue == true
             }
 
             local frame = createBaseElement(tab, 42)
 
-            local label = makeText(frame, config.Name or "Toggle", 13, currentTheme.Text, false)
+            local label = makeText(
+                frame,
+                config.Name or "Toggle",
+                13,
+                currentTheme.Text,
+                false
+            )
+
             label.Position = UDim2.fromOffset(12, 0)
             label.Size = UDim2.new(1, -70, 1, 0)
 
@@ -539,38 +593,59 @@ function NovaUI:CreateWindow(settings)
             toggle.Size = UDim2.fromOffset(42, 22)
             toggle.Position = UDim2.new(1, -54, 0.5, -11)
             toggle.Text = ""
-            toggle.BackgroundColor3 = value.CurrentValue and currentTheme.Accent or currentTheme.Input
+            toggle.BackgroundColor3 =
+                value.CurrentValue
+                and currentTheme.Accent
+                or currentTheme.Input
+
             toggle.Parent = frame
+
             corner(toggle, 11)
 
             local knob = Instance.new("Frame")
             knob.Size = UDim2.fromOffset(16, 16)
-            knob.Position = value.CurrentValue
+
+            knob.Position =
+                value.CurrentValue
                 and UDim2.new(1, -19, 0.5, -8)
                 or UDim2.new(0, 3, 0.5, -8)
+
             knob.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
             knob.BorderSizePixel = 0
             knob.Parent = toggle
+
             corner(knob, 9)
 
             local function setToggle(state, fire)
                 value.CurrentValue = state == true
+
                 tween(toggle, {
-                    BackgroundColor3 = value.CurrentValue and currentTheme.Accent or currentTheme.Input
+                    BackgroundColor3 =
+                        value.CurrentValue
+                        and currentTheme.Accent
+                        or currentTheme.Input
                 }, 0.15)
+
                 tween(knob, {
-                    Position = value.CurrentValue
+                    Position =
+                        value.CurrentValue
                         and UDim2.new(1, -19, 0.5, -8)
                         or UDim2.new(0, 3, 0.5, -8)
                 }, 0.15)
 
                 if fire and config.Callback then
-                    task.spawn(config.Callback, value.CurrentValue)
+                    task.spawn(
+                        config.Callback,
+                        value.CurrentValue
+                    )
                 end
             end
 
             toggle.MouseButton1Click:Connect(function()
-                setToggle(not value.CurrentValue, true)
+                setToggle(
+                    not value.CurrentValue,
+                    true
+                )
             end)
 
             function value:Set(state)
@@ -578,24 +653,47 @@ function NovaUI:CreateWindow(settings)
             end
 
             registerFlag(config, value)
+
             return value
         end
 
         function tab:CreateSlider(config)
             config = config or {}
+
             local range = config.Range or {0, 100}
             local min, max = range[1], range[2]
             local increment = config.Increment or 1
-            local current = math.clamp(config.CurrentValue or min, min, max)
+            local current = math.clamp(
+                config.CurrentValue or min,
+                min,
+                max
+            )
 
-            local value = {CurrentValue = current}
+            local value = {
+                CurrentValue = current
+            }
+
             local frame = createBaseElement(tab, 58)
 
-            local label = makeText(frame, config.Name or "Slider", 13, currentTheme.Text, false)
+            local label = makeText(
+                frame,
+                config.Name or "Slider",
+                13,
+                currentTheme.Text,
+                false
+            )
+
             label.Position = UDim2.fromOffset(12, 5)
             label.Size = UDim2.new(1, -24, 0, 20)
 
-            local valueText = makeText(frame, "", 11, currentTheme.SubText, false)
+            local valueText = makeText(
+                frame,
+                "",
+                11,
+                currentTheme.SubText,
+                false
+            )
+
             valueText.AnchorPoint = Vector2.new(1, 0)
             valueText.Position = UDim2.new(1, -12, 0, 6)
             valueText.Size = UDim2.fromOffset(100, 20)
@@ -607,43 +705,44 @@ function NovaUI:CreateWindow(settings)
             bar.BackgroundColor3 = currentTheme.Input
             bar.BorderSizePixel = 0
             bar.Parent = frame
+
             corner(bar, 4)
 
             local fill = Instance.new("Frame")
             fill.BackgroundColor3 = currentTheme.Accent
             fill.BorderSizePixel = 0
             fill.Parent = bar
+
             corner(fill, 4)
 
             local dragging = false
 
             local function updateFromX(x, fire)
-                local percent = math.clamp((x - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-                local raw = min + (max - min) * percent
-                local stepped = math.floor((raw - min) / increment + 0.5) * increment + min
-                stepped = math.clamp(stepped, min, max)
+                local percent = math.clamp(
+                    (x - bar.AbsolutePosition.X)
+                    / bar.AbsoluteSize.X,
+                    0,
+                    1
+                )
+
+                local raw =
+                    min + (max - min) * percent
+
+                local stepped =
+                    math.floor(
+                        (raw - min) / increment + 0.5
+                    ) * increment + min
+
+                stepped = math.clamp(
+                    stepped,
+                    min,
+                    max
+                )
 
                 value.CurrentValue = stepped
-                local p = (stepped - min) / (max - min)
-                fill.Size = UDim2.new(p, 0, 1, 0)
-                valueText.Text = tostring(stepped) .. (config.Suffix or "")
 
-                if fire and config.Callback then
-                    task.spawn(config.Callback, stepped)
-                end
-            end
+                local p =
+                    (stepped - min)
+                    / (max - min)
 
-            bar.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1
-                    or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    updateFromX(input.Position.X, true)
-                end
-            end)
-
-            UserInputService.InputChanged:Connect(function(input)
-                if dragging and (
-                    input.UserInputType == Enum.UserInputType.MouseMovement
-                    or input.UserInputType == Enum.UserInputType.Touch
-                ) then
-                    updateFromX(input.Position.X, t
+                
