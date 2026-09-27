@@ -744,5 +744,619 @@ function NovaUI:CreateWindow(settings)
                 local p =
                     (stepped - min)
                     / (max - min)
+                  function tab:CreateDropdown(config)
+            config = config or {}
 
+            local value = {
+                CurrentOption = config.CurrentOption
+                    or (config.Options and config.Options[1])
+            }
+
+            local frame = createBaseElement(tab, 42)
+
+            local label = makeText(
+                frame,
+                config.Name or "Dropdown",
+                13,
+                currentTheme.Text,
+                false
+            )
+
+            label.Position = UDim2.fromOffset(12, 0)
+            label.Size = UDim2.new(0.5, 0, 1, 0)
+
+            local selected = Instance.new("TextButton")
+            selected.Size = UDim2.new(0.5, -12, 0, 28)
+            selected.Position = UDim2.new(0.5, 0, 0.5, -14)
+            selected.BackgroundColor3 = currentTheme.Input
+            selected.BorderSizePixel = 0
+            selected.TextColor3 = currentTheme.Text
+            selected.TextSize = 11
+            selected.Font = Enum.Font.Gotham
+            selected.Text = tostring(value.CurrentOption or "Select")
+            selected.Parent = frame
+
+            corner(selected, 6)
+
+            local list = Instance.new("Frame")
+            list.Visible = false
+            list.Size = UDim2.new(0.5, -12, 0, 0)
+            list.Position = UDim2.new(0.5, 0, 1, 4)
+            list.BackgroundColor3 = currentTheme.Input
+            list.BorderSizePixel = 0
+            list.ZIndex = 20
+            list.Parent = frame
+
+            corner(list, 6)
+            stroke(list)
+
+            local listLayout = Instance.new("UIListLayout")
+            listLayout.Padding = UDim.new(0, 2)
+            listLayout.Parent = list
+
+            local function refresh()
+                for _, child in ipairs(list:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child:Destroy()
+                    end
+                end
+
+                local options = config.Options or {}
+
+                for _, option in ipairs(options) do
+                    local optionButton = Instance.new("TextButton")
+
+                    optionButton.Size = UDim2.new(1, -6, 0, 28)
+                    optionButton.BackgroundColor3 = currentTheme.Secondary
+                    optionButton.BorderSizePixel = 0
+                    optionButton.Text = tostring(option)
+                    optionButton.TextColor3 = currentTheme.Text
+                    optionButton.TextSize = 11
+                    optionButton.Font = Enum.Font.Gotham
+                    optionButton.AutoButtonColor = false
+                    optionButton.ZIndex = 21
+                    optionButton.Parent = list
+
+                    corner(optionButton, 5)
+
+                    optionButton.MouseButton1Click:Connect(function()
+                        value.CurrentOption = option
+                        selected.Text = tostring(option)
+                        list.Visible = false
+
+                        if config.Callback then
+                            task.spawn(
+                                config.Callback,
+                                option
+                            )
+                        end
+                    end)
+                end
+
+                list.Size = UDim2.new(
+                    0.5,
+                    -12,
+                    0,
+                    math.min(#options * 30 + 6, 150)
+                )
+            end
+
+            selected.MouseButton1Click:Connect(function()
+                list.Visible = not list.Visible
+
+                if list.Visible then
+                    refresh()
+                end
+            end)
+
+            function value:Set(option)
+                value.CurrentOption = option
+                selected.Text = tostring(option)
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        option
+                    )
+                end
+            end
+
+            function value:Refresh(options)
+                config.Options = options or {}
+                refresh()
+            end
+
+            registerFlag(config, value)
+
+            return value
+        end
+
+        function tab:CreateInput(config)
+            config = config or {}
+
+            local value = {
+                CurrentValue = config.CurrentValue or ""
+            }
+
+            local frame = createBaseElement(tab, 50)
+
+            local label = makeText(
+                frame,
+                config.Name or "Input",
+                12,
+                currentTheme.Text,
+                false
+            )
+
+            label.Position = UDim2.fromOffset(12, 3)
+            label.Size = UDim2.new(1, -24, 0, 18)
+
+            local box = Instance.new("TextBox")
+
+            box.Size = UDim2.new(1, -24, 0, 24)
+            box.Position = UDim2.fromOffset(12, 23)
+
+            box.BackgroundColor3 = currentTheme.Input
+            box.BorderSizePixel = 0
+
+            box.TextColor3 = currentTheme.Text
+            box.PlaceholderColor3 = currentTheme.SubText
+
+            box.TextSize = 11
+            box.Font = Enum.Font.Gotham
+
+            box.ClearTextOnFocus = false
+            box.Text = tostring(value.CurrentValue)
+
+            box.PlaceholderText =
+                config.PlaceholderText or "Enter text..."
+
+            box.Parent = frame
+
+            corner(box, 5)
+
+            box.FocusLost:Connect(function()
+                value.CurrentValue = box.Text
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        box.Text
+                    )
+                end
+            end)
+
+            function value:Set(text)
+                value.CurrentValue = tostring(text)
+                box.Text = value.CurrentValue
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        value.CurrentValue
+                    )
+                end
+            end
+
+            registerFlag(config, value)
+
+            return value
+        end
+
+        function tab:CreateKeybind(config)
+            config = config or {}
+
+            local value = {
+                CurrentKeybind =
+                    config.CurrentKeybind
+                    or config.CurrentKey
+                    or Enum.KeyCode.RightShift
+            }
+
+            local frame = createBaseElement(tab, 42)
+
+            local label = makeText(
+                frame,
+                config.Name or "Keybind",
+                13,
+                currentTheme.Text,
+                false
+            )
+
+            label.Position = UDim2.fromOffset(12, 0)
+            label.Size = UDim2.new(0.55, 0, 1, 0)
+
+            local bind = Instance.new("TextButton")
+
+            bind.Size = UDim2.new(0.45, -12, 0, 28)
+            bind.Position = UDim2.new(0.55, 0, 0.5, -14)
+
+            bind.BackgroundColor3 = currentTheme.Input
+            bind.BorderSizePixel = 0
+
+            bind.TextColor3 = currentTheme.Text
+            bind.TextSize = 11
+            bind.Font = Enum.Font.Gotham
+
+            bind.Text = value.CurrentKeybind.Name
+            bind.Parent = frame
+
+            corner(bind, 6)
+
+            local listening = false
+
+            bind.MouseButton1Click:Connect(function()
+                if listening then
+                    return
+                end
+
+                listening = true
+                bind.Text = "Press key..."
+
+                local connection
+
+                connection = UserInputService.InputBegan:Connect(
+                    function(input, processed)
+                        if processed then
+                            return
+                        end
+
+                        if input.UserInputType
+                            == Enum.UserInputType.Keyboard then
+
+                            value.CurrentKeybind = input.KeyCode
+                            bind.Text = input.KeyCode.Name
+                            listening = false
+
+                            connection:Disconnect()
+
+                            if config.Callback then
+                                task.spawn(
+                                    config.Callback,
+                                    input.KeyCode
+                                )
+                            end
+                        end
+                    end
+                )
+            end)
+
+            UserInputService.InputBegan:Connect(
+                function(input, processed)
+                    if processed or listening then
+                        return
+                    end
+
+                    if input.KeyCode == value.CurrentKeybind then
+                        if config.Callback then
+                            task.spawn(
+                                config.Callback,
+                                input.KeyCode
+                            )
+                        end
+                    end
+                end
+            )
+
+            function value:Set(key)
+                if typeof(key) == "EnumItem" then
+                    value.CurrentKeybind = key
+                    bind.Text = key.Name
+                end
+            end
+
+            registerFlag(config, value)
+
+            return value
+        end
+
+        function tab:CreateColorPicker(config)
+            config = config or {}
+
+            local value = {
+                Color = config.Color
+                    or config.CurrentColor
+                    or Color3.fromRGB(255, 255, 255)
+            }
+
+            local frame = createBaseElement(tab, 42)
+
+            local label = makeText(
+                frame,
+                config.Name or "Color",
+                13,
+                currentTheme.Text,
+                false
+            )
+
+            label.Position = UDim2.fromOffset(12, 0)
+            label.Size = UDim2.new(1, -70, 1, 0)
+
+            local preview = Instance.new("TextButton")
+
+            preview.Size = UDim2.fromOffset(36, 24)
+            preview.Position = UDim2.new(1, -48, 0.5, -12)
+
+            preview.BackgroundColor3 = value.Color
+            preview.BorderSizePixel = 0
+            preview.Text = ""
+
+            preview.Parent = frame
+
+            corner(preview, 6)
+            stroke(preview)
+
+            local popup = Instance.new("Frame")
+
+            popup.Visible = false
+            popup.Size = UDim2.fromOffset(220, 150)
+            popup.Position = UDim2.new(1, -220, 1, 5)
+
+            popup.BackgroundColor3 = currentTheme.Element
+            popup.BorderSizePixel = 0
+            popup.ZIndex = 50
+            popup.Parent = frame
+
+            corner(popup, 8)
+            stroke(popup)
+
+            local red = Instance.new("TextBox")
+            local green = Instance.new("TextBox")
+            local blue = Instance.new("TextBox")
+
+            local boxes = {
+                {red, "R"},
+                {green, "G"},
+                {blue, "B"},
+            }
+
+            for i, info in ipairs(boxes) do
+                local box = info[1]
+
+                box.Size = UDim2.new(
+                    1,
+                    -24,
+                    0,
+                    30
+                )
+
+                box.Position = UDim2.fromOffset(
+                    12,
+                    8 + (i - 1) * 36
+                )
+
+                box.BackgroundColor3 =
+                    currentTheme.Input
+
+                box.BorderSizePixel = 0
+
+                box.TextColor3 =
+                    currentTheme.Text
+
+                box.PlaceholderText =
+                    info[2]
+
+                box.TextSize = 12
+                box.Font = Enum.Font.Gotham
+
+                box.ClearTextOnFocus = false
+
+                box.Parent = popup
+
+                corner(box, 5)
+            end
+
+            local function updateColor()
+                local r = math.clamp(
+                    tonumber(red.Text) or 255,
+                    0,
+                    255
+                )
+
+                local g = math.clamp(
+                    tonumber(green.Text) or 255,
+                    0,
+                    255
+                )
+
+                local b = math.clamp(
+                    tonumber(blue.Text) or 255,
+                    0,
+                    255
+                )
+
+                value.Color = Color3.fromRGB(
+                    r,
+                    g,
+                    b
+                )
+
+                preview.BackgroundColor3 =
+                    value.Color
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        value.Color
+                    )
+                end
+            end
+
+            local initialR,
+                initialG,
+                initialB =
+                value.Color.R * 255,
+                value.Color.G * 255,
+                value.Color.B * 255
+
+            red.Text = tostring(
+                math.floor(initialR + 0.5)
+            )
+
+            green.Text = tostring(
+                math.floor(initialG + 0.5)
+            )
+
+            blue.Text = tostring(
+                math.floor(initialB + 0.5)
+            )
+
+            red.FocusLost:Connect(updateColor)
+            green.FocusLost:Connect(updateColor)
+            blue.FocusLost:Connect(updateColor)
+
+            preview.MouseButton1Click:Connect(function()
+                popup.Visible = not popup.Visible
+            end)
+
+            function value:Set(color)
+                if typeof(color) ~= "Color3" then
+                    return
+                end
+
+                value.Color = color
+                preview.BackgroundColor3 = color
+
+                red.Text = tostring(
+                    math.floor(color.R * 255 + 0.5)
+                )
+
+                green.Text = tostring(
+                    math.floor(color.G * 255 + 0.5)
+                )
+
+                blue.Text = tostring(
+                    math.floor(color.B * 255 + 0.5)
+                )
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        color
+                    )
+                end
+            end
+
+            registerFlag(config, value)
+
+            return value
+        end
+
+        function tab:CreateLabel(text)
+            local value = {}
+
+            local label = makeText(
+                page,
+                tostring(text or ""),
+                13,
+                currentTheme.Text,
+                false
+            )
+
+            label.Size = UDim2.new(
+                1,
+                -8,
+                0,
+                30
+            )
+
+            label.BackgroundColor3 =
+                currentTheme.Element
+
+            label.BackgroundTransparency = 0
+
+            corner(label, 7)
+            stroke(label)
+
+            local padding = Instance.new("UIPadding")
+            padding.PaddingLeft = UDim.new(0, 12)
+            padding.Parent = label
+
+            function value:Set(newText)
+                label.Text = tostring(newText)
+            end
+
+            return value
+        end
+
+        function tab:CreateParagraph(config)
+            config = config or {}
+
+            local value = {}
+
+            local frame = createBaseElement(
+                tab,
+                config.Content and 65 or 42
+            )
+
+            local title = makeText(
+                frame,
+                config.Title or "Paragraph",
+                13,
+                currentTheme.Text,
+                true
+            )
+
+            title.Position =
+                UDim2.fromOffset(12, 7)
+
+            title.Size =
+                UDim2.new(1, -24, 0, 20)
+
+            local content = makeText(
+                frame,
+                config.Content or "",
+                11,
+                currentTheme.SubText,
+                false
+            )
+
+            content.Position =
+                UDim2.fromOffset(12, 28)
+
+            content.Size =
+                UDim2.new(1, -24, 0, 30)
+
+            content.TextWrapped = true
+
+            function value:Set(newConfig)
+                if type(newConfig) == "table" then
+                    if newConfig.Title then
+                        title.Text =
+                            tostring(newConfig.Title)
+                    end
+
+                    if newConfig.Content then
+                        content.Text =
+                            tostring(newConfig.Content)
+                    end
+                else
+                    content.Text =
+                        tostring(newConfig)
+                end
+            end
+
+            return value
+        end
+
+        table.insert(
+            window._tabsList,
+            tab
+        )
+
+        button.MouseButton1Click:Connect(
+            function()
+                tab:Select()
+            end
+        )
+
+        if #window._tabsList == 1 then
+            tab:Select()
+        end
+
+        return tab
+    end
+
+    return window
+        end
                 
