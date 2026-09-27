@@ -1360,3 +1360,507 @@ function NovaUI:CreateWindow(settings)
     return window
         end
                 
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                    or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
+
+            function value:Set(newValue)
+                newValue = math.clamp(
+                    tonumber(newValue) or min,
+                    min,
+                    max
+                )
+
+                local percent =
+                    (newValue - min) / (max - min)
+
+                updateFromX(
+                    bar.AbsolutePosition.X
+                    + bar.AbsoluteSize.X * percent,
+                    true
+                )
+            end
+
+            registerFlag(config, value)
+
+            return value
+        end
+
+        function tab:CreateDropdown(config)
+            config = config or {}
+
+            local value = {
+                CurrentOption = config.CurrentOption
+                    or (config.Options and config.Options[1])
+            }
+
+            local frame = createBaseElement(tab, 42)
+
+            local label = makeText(
+                frame,
+                config.Name or "Dropdown",
+                13,
+                currentTheme.Text,
+                false
+            )
+
+            label.Position = UDim2.fromOffset(12, 0)
+            label.Size = UDim2.new(0.5, 0, 1, 0)
+
+            local selected = Instance.new("TextButton")
+            selected.Size = UDim2.new(0.5, -12, 0, 28)
+            selected.Position = UDim2.new(0.5, 0, 0.5, -14)
+            selected.BackgroundColor3 = currentTheme.Input
+            selected.BorderSizePixel = 0
+            selected.TextColor3 = currentTheme.Text
+            selected.TextSize = 11
+            selected.Font = Enum.Font.Gotham
+            selected.Text = tostring(
+                value.CurrentOption or "Select"
+            )
+            selected.Parent = frame
+
+            corner(selected, 6)
+
+            local list = Instance.new("Frame")
+            list.Visible = false
+            list.Size = UDim2.new(0.5, -12, 0, 0)
+            list.Position = UDim2.new(0.5, 0, 1, 4)
+            list.BackgroundColor3 = currentTheme.Input
+            list.BorderSizePixel = 0
+            list.ZIndex = 20
+            list.Parent = frame
+
+            corner(list, 6)
+            stroke(list)
+
+            local listLayout = Instance.new("UIListLayout")
+            listLayout.Padding = UDim.new(0, 2)
+            listLayout.Parent = list
+
+            local function refresh()
+                for _, child in ipairs(list:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child:Destroy()
+                    end
+                end
+
+                local options = config.Options or {}
+
+                for _, option in ipairs(options) do
+                    local optionButton =
+                        Instance.new("TextButton")
+
+                    optionButton.Size =
+                        UDim2.new(1, -6, 0, 28)
+
+                    optionButton.BackgroundColor3 =
+                        currentTheme.Secondary
+
+                    optionButton.BorderSizePixel = 0
+                    optionButton.Text = tostring(option)
+                    optionButton.TextColor3 =
+                        currentTheme.Text
+
+                    optionButton.TextSize = 11
+                    optionButton.Font =
+                        Enum.Font.Gotham
+
+                    optionButton.AutoButtonColor = false
+                    optionButton.ZIndex = 21
+                    optionButton.Parent = list
+
+                    corner(optionButton, 5)
+
+                    optionButton.MouseButton1Click:Connect(
+                        function()
+                            value.CurrentOption = option
+                            selected.Text = tostring(option)
+                            list.Visible = false
+
+                            if config.Callback then
+                                task.spawn(
+                                    config.Callback,
+                                    option
+                                )
+                            end
+                        end
+                    )
+                end
+
+                list.Size = UDim2.new(
+                    0.5,
+                    -12,
+                    0,
+                    math.min(#options * 30 + 6, 150)
+                )
+            end
+
+            selected.MouseButton1Click:Connect(
+                function()
+                    list.Visible = not list.Visible
+
+                    if list.Visible then
+                        refresh()
+                    end
+                end
+            )
+
+            function value:Set(option)
+                value.CurrentOption = option
+                selected.Text = tostring(option)
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        option
+                    )
+                end
+            end
+
+            function value:Refresh(options)
+                config.Options = options or {}
+                refresh()
+            end
+
+            registerFlag(config, value)
+
+            return value
+        end
+
+        function tab:CreateInput(config)
+            config = config or {}
+
+            local value = {
+                CurrentValue = config.CurrentValue or ""
+            }
+
+            local frame = createBaseElement(tab, 50)
+
+            local label = makeText(
+                frame,
+                config.Name or "Input",
+                12,
+                currentTheme.Text,
+                false
+            )
+
+            label.Position = UDim2.fromOffset(12, 3)
+            label.Size = UDim2.new(1, -24, 0, 18)
+
+            local box = Instance.new("TextBox")
+
+            box.Size = UDim2.new(1, -24, 0, 24)
+            box.Position = UDim2.fromOffset(12, 23)
+
+            box.BackgroundColor3 = currentTheme.Input
+            box.BorderSizePixel = 0
+
+            box.TextColor3 = currentTheme.Text
+            box.PlaceholderColor3 = currentTheme.SubText
+
+            box.TextSize = 11
+            box.Font = Enum.Font.Gotham
+
+            box.ClearTextOnFocus = false
+            box.Text = tostring(value.CurrentValue)
+
+            box.PlaceholderText =
+                config.PlaceholderText or "Enter text..."
+
+            box.Parent = frame
+
+            corner(box, 5)
+
+            box.FocusLost:Connect(function()
+                value.CurrentValue = box.Text
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        box.Text
+                    )
+                end
+            end)
+
+            function value:Set(text)
+                value.CurrentValue = tostring(text)
+                box.Text = value.CurrentValue
+
+                if config.Callback then
+                    task.spawn(
+                        config.Callback,
+                        value.CurrentValue
+                    )
+                end
+            end
+
+            registerFlag(config, value)
+
+            return value
+        end
+
+        function tab:CreateLabel(text)
+            local value = {}
+
+            local label = makeText(
+                page,
+                tostring(text or ""),
+                13,
+                currentTheme.Text,
+                false
+            )
+
+            label.Size = UDim2.new(1, -8, 0, 30)
+            label.BackgroundColor3 = currentTheme.Element
+            label.BackgroundTransparency = 0
+
+            corner(label, 7)
+            stroke(label)
+
+            local padding = Instance.new("UIPadding")
+            padding.PaddingLeft = UDim.new(0, 12)
+            padding.Parent = label
+
+            function value:Set(newText)
+                label.Text = tostring(newText)
+            end
+
+            return value
+        end
+
+        function tab:CreateParagraph(config)
+            config = config or {}
+
+            local value = {}
+
+            local frame = createBaseElement(
+                tab,
+                65
+            )
+
+            local title = makeText(
+                frame,
+                config.Title or "Paragraph",
+                13,
+                currentTheme.Text,
+                true
+            )
+
+            title.Position =
+                UDim2.fromOffset(12, 7)
+
+            title.Size =
+                UDim2.new(1, -24, 0, 20)
+
+            local content = makeText(
+                frame,
+                config.Content or "",
+                11,
+                currentTheme.SubText,
+                false
+            )
+
+            content.Position =
+                UDim2.fromOffset(12, 28)
+
+            content.Size =
+                UDim2.new(1, -24, 0, 30)
+
+            content.TextWrapped = true
+
+            function value:Set(newConfig)
+                if type(newConfig) == "table" then
+
+                    if newConfig.Title then
+                        title.Text =
+                            tostring(newConfig.Title)
+                    end
+
+                    if newConfig.Content then
+                        content.Text =
+                            tostring(newConfig.Content)
+                    end
+
+                else
+                    content.Text =
+                        tostring(newConfig)
+                end
+            end
+
+            return value
+        end
+
+        table.insert(
+            window._tabsList,
+            tab
+        )
+
+        button.MouseButton1Click:Connect(
+            function()
+                tab:Select()
+            end
+        )
+
+        if #window._tabsList == 1 then
+            tab:Select()
+        end
+
+        return tab
+    end
+
+    return window
+end
+
+function NovaUI:Notify(config)
+    config = config or {}
+
+    local parent = getParent()
+
+    local holder = parent:FindFirstChild(
+        "NovaUI_Notifications"
+    )
+
+    if not holder then
+        holder = Instance.new("ScreenGui")
+        holder.Name = "NovaUI_Notifications"
+        holder.ResetOnSpawn = false
+        holder.ZIndexBehavior =
+            Enum.ZIndexBehavior.Sibling
+        holder.Parent = parent
+    end
+
+    local notification = Instance.new("Frame")
+
+    notification.Size =
+        UDim2.fromOffset(280, 70)
+
+    notification.Position =
+        UDim2.new(1, 20, 1, -90)
+
+    notification.AnchorPoint =
+        Vector2.new(0, 1)
+
+    notification.BackgroundColor3 =
+        currentTheme.Notification
+
+    notification.BorderSizePixel = 0
+    notification.Parent = holder
+
+    corner(notification, 8)
+    stroke(notification)
+
+    local title = makeText(
+        notification,
+        config.Title or "NovaUI",
+        13,
+        currentTheme.Text,
+        true
+    )
+
+    title.Position =
+        UDim2.fromOffset(12, 8)
+
+    title.Size =
+        UDim2.new(1, -24, 0, 20)
+
+    local content = makeText(
+        notification,
+        config.Content or "",
+        11,
+        currentTheme.SubText,
+        false
+    )
+
+    content.Position =
+        UDim2.fromOffset(12, 30)
+
+    content.Size =
+        UDim2.new(1, -24, 0, 30)
+
+    content.TextWrapped = true
+
+    tween(
+        notification,
+        {
+            Position =
+                UDim2.new(
+                    1,
+                    -300,
+                    1,
+                    -90
+                )
+        },
+        0.3
+    )
+
+    task.delay(
+        config.Duration or 4,
+        function()
+            if notification.Parent then
+                tween(
+                    notification,
+                    {
+                        Position =
+                            UDim2.new(
+                                1,
+                                20,
+                                1,
+                                -90
+                            )
+                    },
+                    0.3
+                )
+
+                task.wait(0.35)
+
+                if notification then
+                    notification:Destroy()
+                end
+            end
+        end
+    )
+
+    return notification
+end
+
+function NovaUI:SetVisibility(value)
+    if activeWindow then
+        activeWindow:SetVisibility(value)
+    end
+end
+
+function NovaUI:IsVisible()
+    if activeWindow then
+        return activeWindow:IsVisible()
+    end
+
+    return false
+end
+
+function NovaUI:Destroy()
+    if activeWindow then
+        activeWindow:Destroy()
+    end
+
+    local parent = getParent()
+
+    local notifications =
+        parent:FindFirstChild(
+            "NovaUI_Notifications"
+        )
+
+    if notifications then
+        notifications:Destroy()
+    end
+
+    destroyed = true
+end
+
+return NovaUI
